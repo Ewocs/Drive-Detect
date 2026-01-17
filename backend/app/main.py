@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import io
 import pathlib
+import logging
 from app.model import TrafficSignModel
 from app.utils import preprocess_image
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Traffic Sign Classification API", version="1.0.0")
 
@@ -42,15 +47,20 @@ async def predict(file: UploadFile = File(...)):
     try:
         # Read image
         contents = await file.read()
+        logger.info(f"Received image: {file.filename}, size: {len(contents)} bytes")
         image = Image.open(io.BytesIO(contents))
+        logger.info(f"Image opened: {image.size}, mode: {image.mode}")
         
         # Preprocess
         input_data = preprocess_image(image)
+        logger.info(f"Preprocessed data shape: {input_data.shape}, dtype: {input_data.dtype}")
         
         # Predict
         result = model.predict(input_data)
+        logger.info(f"Prediction successful")
         
         return result
     
     except Exception as e:
+        logger.error(f"Prediction failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
