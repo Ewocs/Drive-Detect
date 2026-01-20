@@ -1,26 +1,49 @@
 import cv2
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import os
-import sys
 from PIL import Image
 from torchvision import transforms
 
-# 1. Path Handling (Ensures script finds the model and 'main.py')
-script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(script_dir) # Adds experimentation folder to path
+# Copy the class definition from main.py here so we don't need to import main
+class TrafficSignCNN(nn.Module):
+    def __init__(self):
+        super(TrafficSignCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        self.fc1 = nn.Linear(128 * 4 * 4, 512)
+        self.fc2 = nn.Linear(512, 43)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
 
-from main import TrafficSignCNN 
+    def forward(self, x):
+        x = self.pool(self.relu(self.conv1(x)))
+        x = self.pool(self.relu(self.conv2(x)))
+        x = self.pool(self.relu(self.conv3(x)))
+        x = x.view(-1, 128 * 4 * 4)
+        x = self.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
-# 2. Setup Device and Load Model
+# 1. Setup Device and Load Model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = TrafficSignCNN()
 
+# Path logic
+script_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(script_dir, "traffic_sign_model.pth")
-if not os.path.exists(model_path):
-    print(f"Error: Could not find {model_path}. Make sure you've trained the model first!")
+
+if os.path.exists(model_path):
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    print("Model loaded successfully!")
+else:
+    print(f"Model file not found at {model_path}")
     exit()
 
-model.load_state_dict(torch.load(model_path, map_location=device))
 model.to(device)
 model.eval()
 
