@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UploadZone } from '../components/UploadZone';
 import { ResultCard } from '../components/ResultCard';
-import { Car, Github, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Car, Github, ShieldCheck, ArrowLeft, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getApiUrl } from '../utils/api';
 
 interface Prediction {
   class_id: number;
@@ -44,7 +45,7 @@ export function Dashboard() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post<PredictionResponse>('/predict', formData, {
+      const response = await axios.post<PredictionResponse>(getApiUrl('/predict'), formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -52,7 +53,7 @@ export function Dashboard() {
       setPredictions(response.data.predictions);
     } catch (err) {
       console.error(err);
-      setError("Failed to classify image. Please ensure the backend is running.");
+      setError("Failed to classify image. Please ensure the backend is running and check your API endpoint settings.");
     } finally {
       setIsLoading(false);
     }
@@ -75,6 +76,9 @@ export function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <Link to="/settings" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
+            <Settings size={20} />
+          </Link>
           <a href="https://github.com/aayush-1709/Drive-Detect" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
             <Github size={20} />
           </a>
